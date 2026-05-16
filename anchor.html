@@ -8,8 +8,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Anchor" />
   <meta name="theme-color" content="#f5f0e8" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" href="icon-192.png" />
+  <link rel="manifest" href="/Anchor/manifest.json" />
+  <link rel="icon" href="/Anchor/icon-192.png" />
   <title>Anchor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400&display=swap" rel="stylesheet" />
@@ -905,7 +905,7 @@ function save() {
 // ── Service Worker ────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./sw.js');
+    navigator.serviceWorker.register('/Anchor/sw.js', { scope: '/Anchor/' });
   });
 }
 

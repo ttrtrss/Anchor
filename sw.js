@@ -1,7 +1,9 @@
 var CACHE = 'anchor-v1';
 var ASSETS = [
-  './anchor.html',
-  './manifest.json',
+  '/Anchor/anchor.html',
+  '/Anchor/manifest.json',
+  '/Anchor/icon-192.png',
+  '/Anchor/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400&display=swap'
 ];
 
