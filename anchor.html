@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Anchor" />
+  <meta name="theme-color" content="#f5f0e8" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" />
+  <title>Anchor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f5f0e8;
+      --bg2: #ede8de;
+      --ink: #2a2520;
+      --ink-soft: #7a7168;
+      --ink-faint: #c4bdb0;
+      --accent: #8b7355;
+      --accent-light: #d4c4a8;
+      --radius: 2px;
+      --c-goal:        #c8d8cf;
+      --c-affirmation: #ddd0d8;
+      --c-principle:   #ddd4bc;
+      --c-reminder:    #ccd4d8;
+      --fs-entry:  20px;
+      --fs-meta:   9px;
+      --fs-number: 12px;
+      --fs-label:  10px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Jost', sans-serif;
+      font-weight: 300;
+      overscroll-behavior: none;
+    }
+
+    .app { min-height: 100dvh; display: flex; flex-direction: column; }
+
+    /* ── Header ── */
+    header {
+      padding: 48px 32px 24px;
+      display: flex; align-items: flex-end; justify-content: space-between;
+      opacity: 0; animation: rise 0.8s ease forwards 0.1s;
+    }
+    .wordmark {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 13px; font-weight: 300;
+      letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-soft);
+    }
+    .header-date { font-size: 11px; letter-spacing: 0.12em; color: var(--ink-faint); }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex; padding: 0 32px; gap: 24px;
+      border-bottom: 1px solid var(--accent-light);
+      opacity: 0; animation: rise 0.8s ease forwards 0.2s;
+    }
+    .tab {
+      font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--ink-faint); padding: 12px 0; cursor: pointer;
+      border-bottom: 1px solid transparent; margin-bottom: -1px;
+      transition: color 0.2s, border-color 0.2s;
+      background: none; border-top: none; border-left: none; border-right: none;
+      font-family: 'Jost', sans-serif; font-weight: 300;
+    }
+    .tab.active { color: var(--ink); border-bottom-color: var(--accent); }
+
+    /* ── Views ── */
+    .view-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    .view {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+    }
+    .view.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .view.hidden { visibility: hidden; }
+    .read-view { padding: 40px 32px 60px; }
+    .edit-view  { padding: 32px 32px 100px; gap: 24px; }
+
+    /* ── Entry items ── */
+    .entry-item {
+      padding: 18px 0 18px 14px;
+      border-bottom: 1px solid var(--accent-light);
+      display: flex; align-items: stretch; gap: 16px;
+      border-left: 2px solid transparent;
+      transition: opacity 0.2s; cursor: pointer;
+    }
+    .entry-item:first-of-type { border-top: 1px solid var(--accent-light); }
+    .entry-item[data-tag="goal"]        { border-left-color: var(--c-goal); }
+    .entry-item[data-tag="affirmation"] { border-left-color: var(--c-affirmation); }
+    .entry-item[data-tag="principle"]   { border-left-color: var(--c-principle); }
+    .entry-item[data-tag="reminder"]    { border-left-color: var(--c-reminder); }
+    .entry-item.archived { opacity: 0.45; }
+    .entry-item:active { opacity: 0.35; }
+    .entry-number {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: var(--fs-number); color: var(--ink-faint);
+      letter-spacing: 0.1em; padding-top: 3px; min-width: 18px;
+    }
+    .entry-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: var(--fs-entry); font-weight: 300;
+      line-height: 1.5; color: var(--ink); flex: 1;
+    }
+    .entry-item.archived .entry-text { font-style: italic; color: var(--ink-soft); }
+    .entry-meta {
+      display: flex; flex-direction: column;
+      justify-content: space-between; align-items: flex-end;
+      padding-top: 3px; min-width: 52px; gap: 4px;
+    }
+    .entry-tag {
+      font-size: var(--fs-meta); letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--ink-faint);
+    }
+    .entry-date {
+      font-size: var(--fs-meta); letter-spacing: 0.08em;
+      color: var(--ink-faint); font-style: italic; white-space: nowrap;
+    }
+    .entry-date-archived {
+      font-size: var(--fs-meta); letter-spacing: 0.08em;
+      color: var(--ink-faint); font-style: italic; white-space: nowrap; opacity: 0.7;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; padding: 60px 32px;
+    }
+    .empty-line { width: 40px; height: 1px; background: var(--accent-light); }
+    .empty-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 16px; font-style: italic;
+      color: var(--ink-faint); text-align: center; line-height: 1.6;
+    }
+
+    /* ── Archive toggle ── */
+    .archive-toggle {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 40px; padding: 14px 0;
+      border-top: 1px solid var(--accent-light);
+      cursor: pointer; user-select: none;
+    }
+    .archive-toggle-left { display: flex; align-items: center; gap: 10px; }
+    .archive-toggle-label {
+      font-size: var(--fs-label); letter-spacing: 0.25em;
+      text-transform: uppercase; color: var(--ink-faint);
+    }
+    .archive-toggle-count { font-size: 9px; letter-spacing: 0.1em; color: var(--ink-faint); opacity: 0.7; }
+    .archive-chevron {
+      font-size: 10px; color: var(--ink-faint);
+      transition: transform 0.25s ease; display: inline-block;
+    }
+    .archive-chevron.open { transform: rotate(180deg); }
+
+    /* ── Archive dots ── */
+    .archive-dots { display: flex; flex-wrap: wrap; gap: 12px; padding: 4px 0 16px; }
+    .archive-dot {
+      width: 20px; height: 20px; border-radius: 2px;
+      background: var(--accent-light); opacity: 0.45;
+      flex-shrink: 0; cursor: pointer; transition: opacity 0.15s;
+    }
+    .archive-dot:active { opacity: 0.85; }
+    .archive-dot-active {
+      opacity: 0.75;
+      outline: 1.5px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* ── Archive expanded area ── */
+    .archive-expanded-list {
+      min-height: 120px;
+      display: flex; flex-direction: column;
+    }
+    /* divider only when there's content */
+    .archive-expanded-list.has-content {
+      border-top: 1px solid var(--accent-light);
+      margin-top: 4px;
+    }
+
+    /* ── Archive cards (3-col grid) ── */
+    .archive-card-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 8px; margin-top: 12px; margin-bottom: 8px;
+    }
+    .archive-card {
+      background: var(--bg2);
+      border-left: 2px solid transparent; border-radius: var(--radius);
+      padding: 10px 10px 8px;
+      display: flex; flex-direction: column; gap: 6px;
+      cursor: pointer; transition: opacity 0.2s;
+    }
+    .archive-card:active { opacity: 0.6; }
+    .archive-card[data-tag="goal"]        { border-left-color: var(--c-goal); }
+    .archive-card[data-tag="affirmation"] { border-left-color: var(--c-affirmation); }
+    .archive-card[data-tag="principle"]   { border-left-color: var(--c-principle); }
+    .archive-card[data-tag="reminder"]    { border-left-color: var(--c-reminder); }
+    .archive-card-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 9px; color: var(--ink-faint); letter-spacing: 0.1em;
+    }
+    .archive-card-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 13px; font-weight: 300; line-height: 1.4;
+      color: var(--ink-soft); font-style: italic; flex: 1;
+      display: -webkit-box; -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .archive-card-date {
+      font-size: 8px; letter-spacing: 0.08em;
+      color: var(--ink-faint); font-style: italic;
+    }
+
+    /* ── Full-width card (single dot expansion) ── */
+    .archive-card-full { width: 100%; margin-top: 8px; }
+    .archive-card-text-full {
+      -webkit-line-clamp: unset; overflow: visible;
+      font-size: 16px; color: var(--ink-soft);
+    }
+
+    /* ── Focus section ── */
+    .focus-section {
+      padding: 20px 20px 20px 18px;
+      margin-bottom: 32px;
+      border-left: 2px solid transparent;
+      background: var(--bg2);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .focus-section[data-tag="goal"]        { border-left-color: var(--c-goal); }
+    .focus-section[data-tag="affirmation"] { border-left-color: var(--c-affirmation); }
+    .focus-section[data-tag="principle"]   { border-left-color: var(--c-principle); }
+    .focus-section[data-tag="reminder"]    { border-left-color: var(--c-reminder); }
+    .focus-empty {
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+    .focus-empty:active { opacity: 0.4; }
+    .focus-label {
+      font-size: 9px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+    .focus-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: calc(var(--fs-entry) * 1.15);
+      font-weight: 300;
+      line-height: 1.45;
+      color: var(--ink);
+    }
+    .focus-tag {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+    .focus-placeholder {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 15px;
+      font-style: italic;
+      color: var(--ink-faint);
+    }
+
+    /* ── Focus button in edit ── */
+    .focus-btn { font-size: 10px; opacity: 0.35; transition: opacity 0.15s, color 0.15s; }
+    .focus-btn:active { opacity: 1; }
+    .focus-active { opacity: 1; color: var(--accent); }
+    .edit-section-header { display: flex; justify-content: space-between; align-items: center; }
+    .edit-label-group { display: flex; align-items: center; gap: 10px; }
+    .edit-label { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-soft); }
+    .edit-label-count { font-size: 9px; letter-spacing: 0.1em; color: var(--ink-faint); opacity: 0.7; }
+    .add-btn {
+      font-family: 'Jost', sans-serif; font-size: 11px;
+      letter-spacing: 0.15em; color: var(--accent);
+      background: none; border: 1px solid var(--accent-light);
+      padding: 8px 14px; border-radius: var(--radius);
+      cursor: pointer; transition: background 0.2s;
+    }
+    .add-btn:active { background: var(--accent-light); }
+    .edit-entries { display: flex; flex-direction: column; gap: 10px; }
+    .edit-entry {
+      display: flex; flex-direction: column; gap: 4px;
+      border-left: 2px solid transparent; padding-left: 10px;
+      transition: border-color 0.2s, opacity 0.2s;
+    }
+    .edit-entry[data-tag="goal"]        { border-left-color: var(--c-goal); }
+    .edit-entry[data-tag="affirmation"] { border-left-color: var(--c-affirmation); }
+    .edit-entry[data-tag="principle"]   { border-left-color: var(--c-principle); }
+    .edit-entry[data-tag="reminder"]    { border-left-color: var(--c-reminder); }
+    .edit-entry.dragging  { opacity: 0.3; }
+    .edit-entry.drag-over { border-left-color: var(--accent) !important; }
+    .edit-entry-row { display: flex; gap: 8px; align-items: flex-start; }
+    .drag-handle {
+      color: var(--ink-faint); font-size: 16px;
+      padding: 15px 4px 14px 0; cursor: grab;
+      user-select: none; touch-action: none; line-height: 1;
+    }
+    .drag-handle:active { cursor: grabbing; color: var(--ink-soft); }
+    .edit-entry textarea {
+      flex: 1; background: var(--bg2);
+      border: 1px solid transparent; border-radius: var(--radius);
+      padding: 14px 16px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: var(--fs-entry); font-weight: 300;
+      color: var(--ink); line-height: 1.5;
+      resize: none; outline: none; min-height: 56px;
+      transition: border-color 0.2s;
+    }
+    .edit-entry textarea:focus { border-color: var(--accent-light); }
+    .edit-entry textarea::placeholder { color: var(--ink-faint); font-style: italic; }
+    .tag-select {
+      background: var(--bg2); border: 1px solid transparent;
+      border-radius: var(--radius); padding: 14px 6px;
+      font-family: 'Jost', sans-serif; font-size: 10px;
+      letter-spacing: 0.08em; color: var(--ink-soft);
+      outline: none; cursor: pointer; min-width: 66px;
+    }
+    .entry-actions { display: flex; flex-direction: column; }
+    .action-btn {
+      background: none; border: none; color: var(--ink-faint);
+      font-size: 14px; cursor: pointer; padding: 8px 4px;
+      line-height: 1; transition: color 0.2s; font-family: 'Jost', sans-serif;
+    }
+    .action-btn:active { color: var(--ink); }
+    .edit-dates { display: flex; flex-direction: column; gap: 2px; padding-left: 2px; }
+    .edit-created { font-size: 10px; letter-spacing: 0.08em; color: var(--ink-faint); font-style: italic; }
+    .edit-archived-at { font-size: 10px; letter-spacing: 0.08em; color: var(--ink-faint); font-style: italic; opacity: 0.7; }
+
+    /* ── Appearance panel ── */
+    .customise-section {
+      margin-top: 40px; padding-top: 24px;
+      border-top: 1px solid var(--accent-light);
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .customise-label { font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--ink-faint); }
+    .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .template-btn {
+      background: var(--bg2); border: 1px solid transparent;
+      border-radius: var(--radius); padding: 14px 12px;
+      cursor: pointer; text-align: left;
+      transition: border-color 0.2s, background 0.2s;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .template-btn.active { border-color: var(--accent-light); background: var(--bg); }
+    .template-btn:active { opacity: 0.7; }
+    .template-name { font-family: 'Jost', sans-serif; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft); }
+    .template-preview-row { display: flex; align-items: baseline; gap: 6px; margin-top: 4px; }
+    .template-num-preview { font-family: 'Cormorant Garamond', serif; font-weight: 300; color: var(--ink-faint); letter-spacing: 0.05em; line-height: 1.3; opacity: 0.6; }
+    .template-preview { font-family: 'Cormorant Garamond', serif; font-weight: 300; color: var(--ink-faint); line-height: 1.3; }
+    .template-desc { font-size: 9px; letter-spacing: 0.08em; color: var(--ink-faint); margin-top: 2px; }
+
+    /* ── Save bar ── */
+    .save-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 16px 32px calc(16px + env(safe-area-inset-bottom, 0));
+      background: linear-gradient(to top, var(--bg) 70%, transparent);
+    }
+    .save-btn {
+      width: 100%; background: var(--ink); color: var(--bg);
+      border: none; border-radius: var(--radius); padding: 16px;
+      font-family: 'Jost', sans-serif; font-size: 11px;
+      letter-spacing: 0.25em; text-transform: uppercase;
+      cursor: pointer; transition: opacity 0.2s;
+    }
+    .save-btn:active { opacity: 0.7; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 90px; left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--ink); color: var(--bg);
+      font-size: 11px; letter-spacing: 0.15em;
+      padding: 10px 20px; border-radius: 20px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s, transform 0.3s;
+      white-space: nowrap; z-index: 50;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <span class="wordmark">Anchor</span>
+    <span class="header-date" id="headerDate"></span>
+  </header>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('read')">Intentions</button>
+    <button class="tab"        onclick="switchTab('edit')">Edit</button>
+  </div>
+  <div class="view-container">
+    <div class="view read-view active" id="readView"></div>
+    <div class="view edit-view hidden" id="editView"></div>
+  </div>
+  <div class="save-bar" id="saveBar" style="display:none">
+    <button class="save-btn" onclick="save()">Save</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+// ── Constants ─────────────────────────────────────────────
+var STORAGE_KEY = 'anchor_entries';
+var STYLE_KEY   = 'anchor_style';
+
+// ── Templates ─────────────────────────────────────────────
+var TEMPLATES = {
+  whisper:     { name:'Whisper',     desc:'Delicate, reflective', entry:'15px', meta:'8px',  number:'9px',  label:'9px'  },
+  considered:  { name:'Considered',  desc:'Balanced, default',    entry:'20px', meta:'9px',  number:'12px', label:'10px' },
+  grounded:    { name:'Grounded',    desc:'Clear, unhurried',     entry:'24px', meta:'10px', number:'15px', label:'11px' },
+  declaration: { name:'Declaration', desc:'Bold, anchoring',      entry:'30px', meta:'11px', number:'18px', label:'12px' },
+};
+
+// ── State ─────────────────────────────────────────────────
+var activeTemplate  = localStorage.getItem(STYLE_KEY) || 'considered';
+var expandedIndices = new Set();
+var archiveAllOpen  = false;
+var currentTab      = 'read';
+var focusIndex      = parseInt(localStorage.getItem('anchor_focus') || '-1');
+
+var entries = (function() {
+  var nowISO = new Date().toISOString();
+  var defaults = [
+    { text:'I am becoming the person I am meant to be.', tag:'affirmation', createdAt:nowISO, archived:false, archivedAt:null },
+    { text:'Design with intention. Live with intention.', tag:'goal',        createdAt:nowISO, archived:false, archivedAt:null },
+    { text:'Consistency over intensity.',                 tag:'principle',   createdAt:nowISO, archived:false, archivedAt:null },
+  ];
+  var stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+  if (!stored) return defaults;
+  return stored.map(function(e) {
+    return {
+      text:       e.text       || '',
+      tag:        e.tag        || 'goal',
+      createdAt:  e.createdAt  || e.updatedAt || nowISO,
+      archived:   !!e.archived,
+      archivedAt: e.archivedAt || null,
+    };
+  });
+}());
+
+// ── Init ──────────────────────────────────────────────────
+document.getElementById('headerDate').textContent =
+  new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long' }).toUpperCase();
+
+applyTemplate(activeTemplate);
+renderRead();
+
+// ── Template ──────────────────────────────────────────────
+function applyTemplate(key) {
+  activeTemplate = key;
+  localStorage.setItem(STYLE_KEY, key);
+  var t = TEMPLATES[key];
+  var r = document.documentElement.style;
+  r.setProperty('--fs-entry',  t.entry);
+  r.setProperty('--fs-meta',   t.meta);
+  r.setProperty('--fs-number', t.number);
+  r.setProperty('--fs-label',  t.label);
+  // update buttons without re-rendering whole view
+  document.querySelectorAll('.template-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.template === key);
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────
+function fmtDate(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  return pad(d.getDate()) + '.' + pad(d.getMonth()+1) + '.' + String(d.getFullYear()).slice(-2);
+}
+function pad(n) { return n < 10 ? '0'+n : ''+n; }
+function num(n) { return n < 9 ? '0'+(n+1) : ''+(n+1); }
+
+function tagColor(tag) {
+  return { goal:'var(--c-goal)', affirmation:'var(--c-affirmation)', principle:'var(--c-principle)', reminder:'var(--c-reminder)' }[tag] || 'transparent';
+}
+
+// ── Tab switching ─────────────────────────────────────────
+function switchTab(tab) {
+  if (currentTab === tab) return;
+
+  var fromEl = document.getElementById(currentTab === 'read' ? 'readView' : 'editView');
+  var toEl   = document.getElementById(tab === 'read' ? 'readView' : 'editView');
+
+  currentTab = tab;
+
+  document.querySelectorAll('.tab').forEach(function(t, i) {
+    t.classList.toggle('active', i === (tab === 'read' ? 0 : 1));
+  });
+  document.getElementById('saveBar').style.display = tab === 'edit' ? 'block' : 'none';
+
+  // Render content into destination before showing it
+  if (tab === 'read') renderRead();
+  else renderEdit();
+
+  // Swap: fade out old, fade in new
+  fromEl.classList.remove('active');
+  fromEl.classList.add('hidden');
+  toEl.classList.remove('hidden');
+  requestAnimationFrame(function() {
+    toEl.classList.add('active');
+  });
+}
+
+// ── Read view ─────────────────────────────────────────────
+function renderRead() {
+  var view   = document.getElementById('readView');
+  var active = entries.filter(function(e) { return !e.archived; });
+  var parts  = [];
+
+  // Focus section
+  var focusEntry = (focusIndex >= 0 && entries[focusIndex] && !entries[focusIndex].archived)
+    ? entries[focusIndex] : null;
+  parts.push(focusSectionHTML(focusEntry));
+
+  if (!active.length) {
+    parts.push(
+      '<div class="empty-state">' +
+        '<div class="empty-line"></div>' +
+        '<p class="empty-text">Your intentions will appear here.<br>Tap Edit to begin.</p>' +
+        '<div class="empty-line"></div>' +
+      '</div>'
+    );
+  } else {
+    active.forEach(function(e, i) { parts.push(readItemHTML(e, i, false)); });
+  }
+
+  view.innerHTML = parts.join('');
+}
+
+function readItemHTML(e, i, isArchived) {
+  var meta = '<span class="entry-tag">' + e.tag + '</span>';
+  if (e.createdAt) meta += '<span class="entry-date">' + fmtDate(e.createdAt) + '</span>';
+  if (isArchived && e.archivedAt) meta += '<span class="entry-date-archived">↓ ' + fmtDate(e.archivedAt) + '</span>';
+  return '<div class="entry-item' + (isArchived ? ' archived' : '') + '" data-tag="' + e.tag + '" onclick="switchTab(\'edit\')">' +
+    '<span class="entry-number">' + num(i) + '</span>' +
+    '<span class="entry-text">'   + e.text + '</span>' +
+    '<span class="entry-meta">'   + meta   + '</span>' +
+  '</div>';
+}
+
+// ── Edit view ─────────────────────────────────────────────
+function renderEdit() {
+  var view     = document.getElementById('editView');
+  var active   = entries.filter(function(e) { return !e.archived; });
+  var archived = entries.filter(function(e) { return  e.archived; });
+  var parts    = [];
+
+  parts.push(
+    '<div class="edit-section-header">' +
+      '<div class="edit-label-group">' +
+        '<span class="edit-label">Intentions</span>' +
+        '<span class="edit-label-count">' + active.length + '</span>' +
+      '</div>' +
+      '<button class="add-btn" onclick="addEntry()">+ Add</button>' +
+    '</div>' +
+    '<div class="edit-entries" id="activeEntries">' +
+      active.map(function(e) { return editItemHTML(e, false); }).join('') +
+    '</div>'
+  );
+
+  if (archived.length) {
+    parts.push(archiveToggleHTML(archived.length));
+    parts.push(dotsHTML(archived));
+    parts.push(expandedEditHTML(archived));
+  }
+
+  parts.push(appearanceHTML());
+
+  view.innerHTML = parts.join('');
+  view.querySelectorAll('textarea').forEach(autoResize);
+  initDrag();
+}
+
+var PLACEHOLDERS = {
+  goal:        'What do you want to build or become?',
+  affirmation: 'A truth you are growing into…',
+  principle:   'A value that guides how you move…',
+  reminder:    'Something worth remembering today…',
+};
+
+function editItemHTML(e, isArchived) {
+  var gi = entries.indexOf(e);
+  var opts = ['goal','affirmation','principle','reminder'].map(function(t) {
+    return '<option value="' + t + '"' + (e.tag === t ? ' selected' : '') + '>' +
+      t[0].toUpperCase() + t.slice(1,6) + '</option>';
+  }).join('');
+  var placeholder = PLACEHOLDERS[e.tag] || 'Write your intention…';
+  var dates = '';
+  if (e.createdAt) dates += '<span class="edit-created">Created ' + fmtDate(e.createdAt) + '</span>';
+  if (isArchived && e.archivedAt) dates += '<span class="edit-archived-at">Archived ' + fmtDate(e.archivedAt) + '</span>';
+  var isFocused = (focusIndex === gi);
+  return '<div class="edit-entry" data-index="' + gi + '" data-tag="' + e.tag + '">' +
+    '<div class="edit-entry-row">' +
+      (!isArchived ? '<span class="drag-handle">⠿</span>' : '<span style="width:20px;display:inline-block"></span>') +
+      '<textarea oninput="autoResize(this)" data-index="' + gi + '" placeholder="' + placeholder + '">' + e.text + '</textarea>' +
+      '<select class="tag-select" data-index="' + gi + '" onchange="this.closest(\'.edit-entry\').dataset.tag=this.value;updatePlaceholder(this)">' + opts + '</select>' +
+      '<div class="entry-actions">' +
+        (!isArchived ? '<button class="action-btn focus-btn' + (isFocused ? ' focus-active' : '') + '" title="Set as focus" onclick="setFocus(' + gi + ')">◆</button>' : '') +
+        '<button class="action-btn" onclick="toggleArchive(' + gi + ')">' + (isArchived ? '↑' : '↓') + '</button>' +
+        '<button class="action-btn" onclick="deleteEntry(' + gi + ')">×</button>' +
+      '</div>' +
+    '</div>' +
+    (dates ? '<div class="edit-dates">' + dates + '</div>' : '') +
+  '</div>';
+}
+
+function focusSectionHTML(e) {
+  if (!e) {
+    return '<div class="focus-section focus-empty" onclick="switchTab(\'edit\')">' +
+             '<span class="focus-label">Focus</span>' +
+             '<span class="focus-placeholder">Set a focus in Edit →</span>' +
+           '</div>';
+  }
+  return '<div class="focus-section" data-tag="' + e.tag + '">' +
+           '<span class="focus-label">Focus</span>' +
+           '<span class="focus-text">' + e.text + '</span>' +
+           '<span class="focus-tag">' + e.tag + '</span>' +
+         '</div>';
+}
+function archiveToggleHTML(count) {
+  return '<div class="archive-toggle" onclick="toggleArchivePanel(' + count + ')">' +
+    '<div class="archive-toggle-left">' +
+      '<span class="archive-toggle-label">Archive</span>' +
+      '<span class="archive-toggle-count">' + count + '</span>' +
+    '</div>' +
+    '<span class="archive-chevron' + (archiveAllOpen ? ' open' : '') + '">&#x2303;</span>' +
+  '</div>';
+}
+
+function dotsHTML(archived) {
+  var dots = archived.map(function(e, i) {
+    var active = expandedIndices.has(i);
+    return '<div class="archive-dot' + (active ? ' archive-dot-active' : '') + '" ' +
+      'onclick="' + (active ? 'collapseEntry(' + i + ')' : 'expandEntry(' + i + ')') + '"></div>';
+  }).join('');
+  return '<div class="archive-dots">' + dots + '</div>';
+}
+
+function expandedReadHTML(archived) {
+  if (archiveAllOpen) {
+    // 3-col grid, no dates
+    var cards = archived.map(function(e, i) {
+      return '<div class="archive-card" data-tag="' + e.tag + '" onclick="switchTab(\'edit\')">' +
+        '<span class="archive-card-num">' + num(i) + '</span>' +
+        '<span class="archive-card-text">' + e.text + '</span>' +
+      '</div>';
+    }).join('');
+    return '<div class="archive-card-grid">' + cards + '</div>';
+  }
+  // Individual dot expansions — full-width card with date, no divider when empty
+  var hasContent = expandedIndices.size > 0;
+  var cards = '';
+  expandedIndices.forEach(function(i) {
+    if (!archived[i]) return;
+    var e = archived[i];
+    cards += '<div class="archive-card archive-card-full" data-tag="' + e.tag + '" onclick="switchTab(\'edit\')">' +
+      '<span class="archive-card-num">' + num(i) + '</span>' +
+      '<span class="archive-card-text archive-card-text-full">' + e.text + '</span>' +
+      (e.createdAt ? '<span class="archive-card-date">' + fmtDate(e.createdAt) + '</span>' : '') +
+    '</div>';
+  });
+  return '<div class="archive-expanded-list' + (hasContent ? ' has-content' : '') + '">' + cards + '</div>';
+}
+
+function expandedEditHTML(archived) {
+  if (archiveAllOpen) {
+    var cards = archived.map(function(e, i) {
+      return '<div class="archive-card" data-tag="' + e.tag + '">' +
+        '<span class="archive-card-num">' + num(i) + '</span>' +
+        '<span class="archive-card-text">' + e.text + '</span>' +
+      '</div>';
+    }).join('');
+    return '<div class="archive-card-grid">' + cards + '</div>';
+  }
+  var hasContent = expandedIndices.size > 0;
+  var cards = '';
+  expandedIndices.forEach(function(i) {
+    if (!archived[i]) return;
+    var e = archived[i];
+    cards += '<div class="archive-card archive-card-full" data-tag="' + e.tag + '">' +
+      '<span class="archive-card-num">' + num(i) + '</span>' +
+      '<span class="archive-card-text archive-card-text-full">' + e.text + '</span>' +
+      (e.createdAt ? '<span class="archive-card-date">' + fmtDate(e.createdAt) + '</span>' : '') +
+    '</div>';
+  });
+  return '<div class="archive-expanded-list' + (hasContent ? ' has-content' : '') + '">' + cards + '</div>';
+}
+
+// ── Archive actions ────────────────────────────────────────
+function toggleArchivePanel(count) {
+  archiveAllOpen = !archiveAllOpen;
+  expandedIndices.clear();
+  refreshArchiveArea();
+}
+
+function expandEntry(i) {
+  archiveAllOpen = false;
+  expandedIndices.add(i);
+  refreshArchiveArea();
+}
+
+function collapseEntry(i) {
+  expandedIndices.delete(i);
+  refreshArchiveArea();
+}
+
+// Re-render only the archive dots + expanded area without touching the whole view
+function refreshArchiveArea() {
+  var archived = entries.filter(function(e) { return e.archived; });
+  if (!archived.length) return;
+
+  // Update chevron
+  document.querySelectorAll('.archive-chevron').forEach(function(el) {
+    el.classList.toggle('open', archiveAllOpen);
+  });
+
+  // Update dots
+  document.querySelectorAll('.archive-dots').forEach(function(el) {
+    el.outerHTML = dotsHTML(archived);
+  });
+  // Re-select after outerHTML replacement
+  document.querySelectorAll('.archive-dots').forEach(function(el) {
+    el.outerHTML = dotsHTML(archived);
+  });
+
+  // Re-render dots properly via innerHTML rebuild of parent sections
+  if (currentTab === 'read') renderRead();
+  else renderEdit();
+}
+
+// ── Appearance ────────────────────────────────────────────
+function appearanceHTML() {
+  return '<div class="customise-section">' +
+    '<span class="customise-label">Appearance</span>' +
+    '<div class="template-grid">' +
+      Object.keys(TEMPLATES).map(function(key) {
+        var t = TEMPLATES[key];
+        return '<button class="template-btn' + (key === activeTemplate ? ' active' : '') + '" ' +
+          'data-template="' + key + '" onclick="applyTemplate(\'' + key + '\')">' +
+          '<span class="template-name">' + t.name + '</span>' +
+          '<span class="template-preview-row">' +
+            '<span class="template-num-preview" style="font-size:' + t.number + '">01</span>' +
+            '<span class="template-preview" style="font-size:' + t.entry + '">Aa</span>' +
+          '</span>' +
+          '<span class="template-desc">' + t.desc + '</span>' +
+        '</button>';
+      }).join('') +
+    '</div>' +
+  '</div>';
+}
+
+// ── Entry actions ─────────────────────────────────────────
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function setFocus(gi) {
+  focusIndex = (focusIndex === gi) ? -1 : gi;
+  localStorage.setItem('anchor_focus', focusIndex);
+  renderEdit();
+}
+
+function updatePlaceholder(sel) {
+  var entry = sel.closest('.edit-entry');
+  var ta = entry && entry.querySelector('textarea');
+  if (ta) ta.placeholder = PLACEHOLDERS[sel.value] || 'Write your intention…';
+}
+
+function addEntry() {
+  entries.push({ text:'', tag:'goal', createdAt:new Date().toISOString(), archived:false, archivedAt:null });
+  renderEdit();
+  requestAnimationFrame(function() {
+    var all = document.querySelectorAll('#activeEntries .edit-entry textarea');
+    var last = all[all.length - 1];
+    if (!last) return;
+    last.scrollIntoView({ behavior:'smooth', block:'center' });
+    last.focus({ preventScroll: true });
+  });
+}
+
+function deleteEntry(gi) {
+  if (focusIndex === gi) { focusIndex = -1; localStorage.setItem('anchor_focus', -1); }
+  else if (focusIndex > gi) { focusIndex--; localStorage.setItem('anchor_focus', focusIndex); }
+  entries.splice(gi, 1);
+  renderEdit();
+}
+
+function toggleArchive(gi) {
+  var now = new Date().toISOString();
+  entries[gi].archived   = !entries[gi].archived;
+  entries[gi].archivedAt = entries[gi].archived ? now : null;
+  if (focusIndex === gi) { focusIndex = -1; localStorage.setItem('anchor_focus', -1); }
+  expandedIndices.clear();
+  archiveAllOpen = false;
+  renderEdit();
+}
+
+// ── Drag to reorder ───────────────────────────────────────
+function initDrag() {
+  var container = document.getElementById('activeEntries');
+  if (!container) return;
+  var dragged = null;
+
+  function items() { return Array.from(container.querySelectorAll('.edit-entry')); }
+
+  function dragStart(item) { dragged = item; item.classList.add('dragging'); }
+
+  function dragMove(y) {
+    if (!dragged) return;
+    items().forEach(function(el) { el.classList.remove('drag-over'); });
+    var target = items().find(function(el) {
+      if (el === dragged) return false;
+      var r = el.getBoundingClientRect();
+      return y >= r.top && y <= r.bottom;
+    });
+    if (target) target.classList.add('drag-over');
+  }
+
+  function dragEnd() {
+    if (!dragged) return;
+    var over = items().find(function(el) { return el.classList.contains('drag-over'); });
+    if (over) {
+      var from = parseInt(dragged.dataset.index);
+      var to   = parseInt(over.dataset.index);
+      var moved = entries.splice(from, 1)[0];
+      entries.splice(to > from ? to - 1 : to, 0, moved);
+      renderEdit();
+      return;
+    }
+    items().forEach(function(el) { el.classList.remove('dragging', 'drag-over'); });
+    dragged = null;
+  }
+
+  container.addEventListener('touchstart', function(ev) {
+    var h = ev.target.closest('.drag-handle');
+    if (h) dragStart(h.closest('.edit-entry'));
+  }, { passive: true });
+  container.addEventListener('touchmove', function(ev) {
+    if (!dragged) return;
+    ev.preventDefault();
+    dragMove(ev.touches[0].clientY);
+  }, { passive: false });
+  container.addEventListener('touchend', dragEnd);
+  container.addEventListener('mousedown', function(ev) {
+    var h = ev.target.closest('.drag-handle');
+    if (!h) return;
+    ev.preventDefault();
+    dragStart(h.closest('.edit-entry'));
+  });
+  document.addEventListener('mousemove', function(ev) { if (dragged) dragMove(ev.clientY); });
+  document.addEventListener('mouseup',   dragEnd);
+}
+
+// ── Save ──────────────────────────────────────────────────
+function save() {
+  document.querySelectorAll('.edit-entry').forEach(function(el) {
+    var gi  = parseInt(el.dataset.index);
+    var ta  = el.querySelector('textarea');
+    var sel = el.querySelector('.tag-select');
+    if (!isNaN(gi) && entries[gi]) {
+      entries[gi].text = ta  ? ta.value.trim() : '';
+      entries[gi].tag  = sel ? sel.value : entries[gi].tag;
+    }
+  });
+  entries = entries.filter(function(e) { return e.text.trim(); });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  showToast('Saved');
+  setTimeout(function() { switchTab('read'); }, 400);
+}
+
+// ── Service Worker ────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js');
+  });
+}
+
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2000);
+}
+</script>
+</body>
+</html>
